@@ -143,7 +143,7 @@
             label2.Name = "label2";
             label2.Size = new Size(123, 13);
             label2.TabIndex = 10;
-            label2.Text = "Copyright © Jgc7 2025";
+            label2.Text = "Copyright © 2025 Jgc7";
             // 
             // Hypotenuse
             // 
