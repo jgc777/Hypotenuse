@@ -1,0 +1,67 @@
+name: Publish and release latest version
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '*.md'
+      - '*.yml'
+      - '.gitignore'
+      - 'LICENSE'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v3
+
+    - name: Set up .NET 8.0
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore -p:EnableWindowsTargeting=true
+      
+    - name: Build and publish app
+      run: dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained false -o ./publish -p:PublishReadyToRun=true -p:EnableWindowsTargeting=true
+      
+    - name: Upload app artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Hypotenuse
+        path: ./publish/*
+        
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v3
+      
+    - name: Download app artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: Hypotenuse
+        path: ./app
+
+    - name: Create GitHub Release
+      uses: ncipollo/release-action@v1
+      with:
+        name: "Hypotenuse v${{ github.run_number }}"
+        tag: ${{ github.run_number }}
+        body:  |
+            To use it, download Hypotenuse.exe and run it (requires [.NET 8.0](https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.408/dotnet-sdk-8.0.408-win-x64.exe)).
+            > ${{ github.event.head_commit.message }}
+            > Diff: ${{ github.event.before }}...${{ github.sha }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        artifacts: |
+          ./app/Hypotenuse.exe
